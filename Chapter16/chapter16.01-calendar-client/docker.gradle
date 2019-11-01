@@ -12,6 +12,7 @@ apply plugin: com.bmuschko.gradle.docker.DockerRemoteApiPlugin
 apply plugin: com.bmuschko.gradle.docker.DockerJavaApplicationPlugin
 
 def fromImage = "openjdk:8-jre-alpine"
+// def fromImage = "openjdk:8-alpine"
 def maintainerEmail = "Mick Knutson <mknutson@baselogic.io>"
 def exposePorts = [8888]
 def exposeBindings = ['8888:8888']
@@ -23,11 +24,11 @@ def jarTag = "jbcpcalendar-client"
 buildscript {
     ext{}
     repositories {
-        jcenter()
+        jcenter()        
     }
     dependencies {
         classpath 'com.github.jengelman.gradle.plugins:gradle-processes:latest.release'
-        classpath( 'com.bmuschko:gradle-docker-plugin:latest.release' )
+        classpath 'com.bmuschko:gradle-docker-plugin:latest.release'
     }
 }
 
@@ -72,21 +73,27 @@ docker logs jbcpcalendar-client --tail="0" --follow
   -e "http://$(ifconfig en0 | awk '/ *inet /{print $2}'):8080" \
 */
 
-dockerDistTar {
+// dockerDistTar {
+dockerCreateDockerfile {
 
     projectTag = (project.path).substring((project.path).lastIndexOf(':')+1)
 
     environmentVariable ('projectTag', "${projectTag}")
-    instruction {"ADD app-lib/${jarTag}-${version}.jar /${jarTag}.jar"}
+    // instruction {"ADD app-lib/${jarTag}-${version}.jar /${jarTag}.jar"}
+    instruction "ADD app-lib/${jarTag}-${version}.jar /${jarTag}.jar"
 //    instruction {"RUN mv ${projectTag}/bin/${projectTag} ${projectTag}/bin/${projectTag}.sh"}
-    instruction {"RUN rm -rf ${projectTag}"}
+    // instruction {"RUN rm -rf ${projectTag}"}
+    instruction "RUN rm -rf ${projectTag}"
 
 //    instruction {'RUN ls -la ./chapter*/bin/'}
-    instruction {"RUN sh -c 'touch ./${jarTag}.jar'"}
-    instruction {'RUN ls -la'}
+    // instruction {"RUN sh -c 'touch ./${jarTag}.jar'"}
+    instruction "RUN sh -c 'touch ./${jarTag}.jar'"
+    // instruction {'RUN ls -la'}
+    instruction 'RUN ls -la'
 
 //    instruction {"ENTRYPOINT ./${projectTag}/bin/${projectTag}.sh"}
-    instruction {"ENTRYPOINT java -Djava.security.egd=file:/dev/./urandom -jar ./${jarTag}.jar"}
+    // instruction {"ENTRYPOINT java -Djava.security.egd=file:/dev/./urandom -jar ./${jarTag}.jar"}
+    instruction "ENTRYPOINT java -Djava.security.egd=file:/dev/./urandom -jar ./${jarTag}.jar"
     environmentVariable ('JAVA_OPTS', '-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap')
     environmentVariable ('OAUTH_URL_TEST', "\"http://MUST GET ACTUAL IP:8080\"")
     environmentVariable ('OAUTH_URL', "\"http://\$(ifconfig en0 | awk '/ *inet /{print \$2}'):8080\"")
@@ -105,15 +112,16 @@ docker {
     }
 
     javaApplication {
-        baseImage fromImage
+        baseImage = fromImage
         maintainer = maintainerEmail
         ports = exposePorts
         tag = imageTag
 
-        exec {
-            defaultCommand "server"
+        // exec {
+            // defaultCommand "server"
+            // defaultCommand('server')
 //            entryPoint "java -Djava.security.egd=file:/dev/./urandom -jar ./${jarTag}.jar"
-        }
+        // }
     }
 }
 
@@ -121,7 +129,7 @@ docker {
  * gradle startContainer -Pfast -s
  */
 task createContainer(type: DockerCreateContainer) {
-
+    
     dependsOn dockerBuildImage
     targetImageId { dockerBuildImage.getImageId() }
     portBindings = exposeBindings
@@ -161,9 +169,11 @@ task removeImage(type: DockerRemoveImage) {
 
 task pushImage(type: DockerPushImage) {
     dependsOn dockerBuildImage
-    imageName "mickknutson/jbcpcalendar-client"
-
-    tag "latest"
+    // imageName "mickknutson/jbcpcalendar-client"
+    imageName = "mickknutson/jbcpcalendar-client"
+    
+    // tag "latest"
+    tag = "latest"
 }
 
 
